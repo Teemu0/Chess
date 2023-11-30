@@ -5,6 +5,11 @@
 import pygame
 import math
 import move_logic
+from Piece import Piece
+from Empty import Empty
+from Pawn import Pawn
+from Rook import Rook
+from Bishop import Bishop
 
 # Define constants
 WIDTH, HEIGHT = 480, 480
@@ -14,6 +19,7 @@ BORDER_WIDTH = SQUARE_SIZE * 0.1
 PIECE_SIZE = SQUARE_SIZE - 2*BORDER_WIDTH
 WHITE_PIECES = ["wKing", "wQueen", "wRook", "wBishop", "wKnight", "wPawn"]
 BLACK_PIECES = ["bKing", "bQueen", "bRook", "bBishop", "bKnight", "bPawn"]
+
 
 # Colors
 LIGHT = (232, 194, 145)
@@ -25,14 +31,16 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chessboard")
 
-gameBoard = [['bRook','bKnight','bBishop','bQueen','bKing','bBishop','bKnight','bRook'],
-          ['bPawn','bPawn','bPawn','bPawn','bPawn','bPawn','bPawn','bPawn'],
-          ['','','','','','','',''],
-          ['','','','','','','',''],
-          ['','','','','','','',''],
-          ['','','','','','','',''],
-          ['wPawn','wPawn','wPawn','wPawn','wPawn','wPawn','wPawn','wPawn'],
-          ['wRook','wKnight','wBishop','wQueen','wKing','wBishop','wKnight','wRook']
+gameBoard = [[Rook("black", "rook", "bRook"),'bKnight',Bishop("black", "bishop", "bBishop"),'bQueen','bKing',Bishop("black", "bishop", "bBishop"),'bKnight',Rook("black", "rook", "bRook")],
+          [Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),
+           Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn")],
+          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
+          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
+          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
+          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
+          [Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),
+           Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn")],
+          [Rook("white", "rook", "wRook"),'wKnight',Bishop("white", "bishop", "wBishop"),'wQueen','wKing',Bishop("white", "bishop", "wBishop"),'wKnight',Rook("white", "rook", "wRook")]
           ]
 
 # load white pieces
@@ -157,10 +165,13 @@ def draw_chessboard(highlight, hlSquare):
     # Draw pieces to the chessboard
     for row in range(len(gameBoard)):
         for col in range(len(gameBoard[row])):
-            if (gameBoard[row][col] == ''):
-                continue
-            else:
+            try:
+                screen.blit(image_dir[gameBoard[row][col].img_id], (col*SQUARE_SIZE + BORDER_WIDTH, row*SQUARE_SIZE + BORDER_WIDTH))
+            # DELETE THIS AFTER ALL PIECES USE THEIR OWN CLASSES
+            except AttributeError:
                 screen.blit(image_dir[gameBoard[row][col]], (col*SQUARE_SIZE + BORDER_WIDTH, row*SQUARE_SIZE + BORDER_WIDTH))
+            except KeyError:
+                continue
     
 
 def selectSquare(pos):
@@ -186,6 +197,7 @@ def makeMove(moveStart, moveEnd):
     if (moveStart == moveEnd):
         return False
     
+    moveCompleted = False
     # dismantle parameters
     pieceToMove = moveStart[1]
     startRow = moveStart[0][0]
@@ -194,17 +206,9 @@ def makeMove(moveStart, moveEnd):
     endRow = moveEnd[0][0]
     endCol = moveEnd[0][1]
 
-    # move pawn
-    if pieceToMove == "wPawn" or pieceToMove == "bPawn":
-        moveCompleted = move_logic.pawnLogic(gameBoard, pieceToMove, pieceToCapture, startRow, startCol, endRow, endCol, WHITE_PIECES, BLACK_PIECES)
-        return moveCompleted
-    
-    # move rook
-    elif pieceToMove == "wRook" or pieceToMove == "bRook":
-        moveCompleted = move_logic.rookLogic(gameBoard, pieceToMove, pieceToCapture, startRow, startCol, endRow, endCol, WHITE_PIECES, BLACK_PIECES)
-        return moveCompleted
-    
-    return False
+    moveCompleted = pieceToMove.moveLogic(gameBoard, pieceToCapture, startRow, startCol, endRow, endCol)
+
+    return moveCompleted
 
 def main():
     clock = pygame.time.Clock()
@@ -225,15 +229,15 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not highlighted:
                     moveStart = selectSquare(event.pos)
-                    if whiteToMove and (moveStart[1] in WHITE_PIECES):
+                    if whiteToMove and (moveStart[1].color == "white"):
                         highlighted = True
-                    elif not whiteToMove and (moveStart[1] in BLACK_PIECES):
+                    elif not whiteToMove and (moveStart[1].color == "black"):
                         highlighted = True
                 else:
                     moveEnd = selectSquare(event.pos)
                     highlighted = False
                     print(f"Starting sq: {moveStart}")
-                    print(f"Etarting sq: {moveEnd}")
+                    print(f"Ending sq: {moveEnd}")
                     if makeMove(moveStart, moveEnd):
                         whiteToMove = not whiteToMove
     
