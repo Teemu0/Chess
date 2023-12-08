@@ -3,6 +3,7 @@ from Piece import Piece
 class Bishop(Piece):
     def __init__(self, color, name, img_id):
         super().__init__(color, name, img_id)
+        self.value = 3
     
     def moveLogic(self, gameBoard, startRow, startCol, endRow, endCol):
         if startRow == endRow and startCol == endCol:

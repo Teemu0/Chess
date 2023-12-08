@@ -14,6 +14,8 @@ from Bishop import Bishop
 from Knight import Knight
 from Queen import Queen
 from King import King
+from Evaluation import Evaluation
+import copy
 
 # Define constants
 WIDTH, HEIGHT = 480, 480
@@ -195,22 +197,21 @@ def selectSquare(pos):
     selected_square = square_dir[rounded_coords]
     selected_piece = gameBoard[rounded_coords[0]][rounded_coords[1]]
     selection = (rounded_coords, selected_piece)
-    print(f"clicked on coordinates {rounded_coords}")
-    print(f'Selected piece is a {selected_piece} on square {selected_square}.')
+    #print(f"clicked on coordinates {rounded_coords}")
+    #print(f'Selected piece is a {selected_piece} on square {selected_square}.')
     return selection
 
 
-def makeMove(moveStart, moveEnd):
+def makeMove(moveStart, moveEnd, gameBoard):
     ''' Checks whether move is legal, and moves the piece if so.
         
         Parameters:
-        - moveStart ((Tuple), String): The square with the piece to be moved. Tuple=coordinates, String=piece name.
-        - moveEnd ((Tuple), String): The square where the piece is to be moved.
+        - moveStart ((Tuple), Piece): The square with the piece to be moved. Tuple=coordinates, String=piece name.
+        - moveEnd ((Tuple), Piece): The square where the piece is to be moved.
         
         Returns:
         bool: True if move was made, False otherwise
     '''
-
     # dismantle parameters
     pieceToMove = moveStart[1]
     startRow = moveStart[0][0]
@@ -220,43 +221,100 @@ def makeMove(moveStart, moveEnd):
     endCol = moveEnd[0][1]
 
     # If move is legal
-    if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol):
-        movePiece(startRow, startCol, endRow, endCol)
-        if selfInCheck(pieceToMove.color):
-            reverseMove(startRow, startCol, endRow, endCol, pieceToCapture)
+    moveIsLegal = pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol)
+    if moveIsLegal:
+        movePiece(startRow, startCol, endRow, endCol, gameBoard)
+        if selfInCheck(pieceToMove.color, gameBoard):
+            reverseMove(startRow, startCol, endRow, endCol, pieceToCapture, gameBoard)
             # Move declined because of a check
             return False   
         else:
+            #If a pawn promotes
+            if moveIsLegal == 2:
+                print("promotion")
+                promotePawn(gameBoard, endRow, endCol)
+                
             # Move accepted and done
             return True
     else:
         # Move declined
         return False
     
-def selfInCheck(color):
+def selfInCheck(color, gameBoard):
     if color == "white":
         for row in range(8):
             for col in range(8):
                 if gameBoard[row][col].color =="black":
                     # If black checks white king
-                    if gameBoard[row][col].getMoves(gameBoard, row, col):
+                    if gameBoard[row][col].getMoves(gameBoard, row, col)[0]:
                         return True
     elif color == "black":
         for row in range(8):
             for col in range(8):
                 if gameBoard[row][col].color == "white":
                     # If white checks black king
-                    if gameBoard[row][col].getMoves(gameBoard, row, col):
+                    if gameBoard[row][col].getMoves(gameBoard, row, col)[0]:
                         return True
 
 
-def movePiece(startRow, startCol, endRow, endCol):
+def movePiece(startRow, startCol, endRow, endCol, gameBoard):
     gameBoard[endRow][endCol] = gameBoard[startRow][startCol]
     gameBoard[startRow][startCol] = empty
 
-def reverseMove(startRow, startCol, endRow, endCol, revivedPiece):
+def reverseMove(startRow, startCol, endRow, endCol, revivedPiece, gameBoard):
     gameBoard[startRow][startCol] = gameBoard[endRow][endCol]
     gameBoard[endRow][endCol] = revivedPiece
+
+def promotePawn(gameBoard, row, col):
+        while True:
+            playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
+            if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
+                break
+            else:
+                print("Invalid input")
+        # If player is white    
+        if gameBoard[row][col].color == "white":
+            if playerInput in ["Q", "q"]:
+                newPiece = wQueen
+            elif playerInput in ["R", "r"]:
+                newPiece = wRook
+            elif playerInput in ["B", "b"]:
+                newPiece = wBishop
+            elif playerInput in ["K", "k"]:
+                newPiece = wKnight
+        # If player is black
+        elif gameBoard[row][col].color == "black":
+            if playerInput in ["Q", "q"]:
+                newPiece = bQueen
+            elif playerInput in ["R", "r"]:
+                newPiece = bRook
+            elif playerInput in ["B", "b"]:
+                newPiece = bBishop
+            elif playerInput in ["K", "k"]:
+                newPiece = bKnight
+        if newPiece != None:
+            gameBoard[row][col] = newPiece
+            print("Promotion successful")
+        else:
+            print("Promotion failed")
+
+
+def minimax(gameBoard, maximizing):
+    # Try every legal move
+    temp_board = copy.deepcopy(gameBoard)
+    # If white to move
+    if maximizing:
+        for row in range(8):
+            for col in range(8):
+                if temp_board[row][col].color =="white":
+                    moveStart = ((row, col), temp_board[row][col])
+                    movesToTry = temp_board[row][col].getMoves(gameBoard, row, col)[1]             
+                    for squares in movesToTry:
+                        temp_board = copy.deepcopy(gameBoard)
+                        moveEnd = (squares, temp_board[squares[0]][squares[1]])
+                        print(f"Move: {moveEnd}")
+                        makeMove(moveStart, moveEnd, temp_board)
+                        Evaluation.eval(temp_board, maximizing)
 
 
 def main():
@@ -287,8 +345,11 @@ def main():
                     highlighted = False
                     print(f"Starting sq: {moveStart}")
                     print(f"Ending sq: {moveEnd}")
-                    if makeMove(moveStart, moveEnd):
+                    if makeMove(moveStart, moveEnd, gameBoard):
                         whiteToMove = not whiteToMove
+                        # Evaluation.eval(gameBoard, whiteToMove)
+                        # minimax(gameBoard, whiteToMove)
+                        Evaluation.checkWin(gameBoard, whiteToMove)
     
         pygame.display.flip()
         clock.tick(30)
