@@ -13,6 +13,20 @@ class Piece:
     def __str__(self):
         return self.color + " " + self.name
     
+    def getMoves(self, gameboard, startRow, startCol):
+        legalMoves = []
+        isCheck = False
+        for row in range(8):
+            for col in range(8):
+                # If move is legal
+                if self.moveLogic(gameboard, startRow, startCol, row, col):
+                    legalMoves.append((row, col))
+                    # If opponent's king is under attack
+                    if gameboard[row][col].name == "king":
+                        isCheck = True
+        print(legalMoves, isCheck)
+        return isCheck
+    
 
 
 '''

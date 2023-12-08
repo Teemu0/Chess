@@ -4,12 +4,16 @@
 '''
 import pygame
 import math
+import time
 import move_logic
 from Piece import Piece
 from Empty import Empty
 from Pawn import Pawn
 from Rook import Rook
 from Bishop import Bishop
+from Knight import Knight
+from Queen import Queen
+from King import King
 
 # Define constants
 WIDTH, HEIGHT = 480, 480
@@ -19,70 +23,82 @@ BORDER_WIDTH = SQUARE_SIZE * 0.1
 PIECE_SIZE = SQUARE_SIZE - 2*BORDER_WIDTH
 WHITE_PIECES = ["wKing", "wQueen", "wRook", "wBishop", "wKnight", "wPawn"]
 BLACK_PIECES = ["bKing", "bQueen", "bRook", "bBishop", "bKnight", "bPawn"]
-
-
 # Colors
 LIGHT = (232, 194, 145)
 DARK = (113, 74, 46)
 HIGHLIGHT_COLOR = (255, 209, 0)
+# Initialize pieces
+bPawn = Pawn("black", "pawn", "bPawn")
+bKnight = Knight("black", "knight", "bKnight")
+bBishop = Bishop("black", "bishop", "bBishop")
+bRook = Rook("black", "rook", "bRook")
+bQueen = Queen("black", "queen", "bQueen")
+bKing = King("black", "king", "bKing")
+wPawn = Pawn("white", "pawn", "wPawn")
+wKnight = Knight("white", "knight", "wKnight")
+wBishop = Bishop("white", "bishop", "wBishop")
+wRook = Rook("white", "rook", "wRook")
+wQueen = Queen("white", "queen", "wQueen")
+wKing = King("white", "king", "wKing")
+empty = Empty(None, None, None)
 
 # Initialize pygame
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chessboard")
 
-gameBoard = [[Rook("black", "rook", "bRook"),'bKnight',Bishop("black", "bishop", "bBishop"),'bQueen','bKing',Bishop("black", "bishop", "bBishop"),'bKnight',Rook("black", "rook", "bRook")],
-          [Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),
-           Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn"),Pawn("black", "pawn", "bPawn")],
-          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
-          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
-          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
-          [Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None),Empty(None, None, None)],
-          [Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),
-           Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn"),Pawn("white", "pawn", "wPawn")],
-          [Rook("white", "rook", "wRook"),'wKnight',Bishop("white", "bishop", "wBishop"),'wQueen','wKing',Bishop("white", "bishop", "wBishop"),'wKnight',Rook("white", "rook", "wRook")]
-          ]
+# Initialize board
+gameBoard = [
+    [bRook,bKnight,bBishop,bQueen,bKing,bBishop,bKnight,bRook],
+    [bPawn,bPawn,bPawn,bPawn,bPawn,bPawn,bPawn,bPawn],
+    [empty,empty,empty,empty,empty,empty,empty,empty],
+    [empty,empty,empty,empty,empty,empty,empty,empty],
+    [empty,empty,empty,empty,empty,empty,empty,empty],
+    [empty,empty,empty,empty,empty,empty,empty,empty],
+    [wPawn,wPawn,wPawn,wPawn,wPawn,wPawn,wPawn,wPawn],
+    [wRook,wKnight,wBishop,wQueen,wKing,wBishop,wKnight,wRook]
+    ]
 
-# load white pieces
-wKing = pygame.image.load('wKing.png')
-wKing = pygame.transform.scale(wKing, (PIECE_SIZE, PIECE_SIZE))
-wQueen = pygame.image.load('wQueen.png')
-wQueen = pygame.transform.scale(wQueen, (PIECE_SIZE, PIECE_SIZE))
-wRook = pygame.image.load('wRook.png')
-wRook = pygame.transform.scale(wRook, (PIECE_SIZE, PIECE_SIZE))
-wBishop = pygame.image.load('wBishop.png')
-wBishop = pygame.transform.scale(wBishop, (PIECE_SIZE, PIECE_SIZE))
-wKnight = pygame.image.load('wKnight.png')
-wKnight = pygame.transform.scale(wKnight, (PIECE_SIZE, PIECE_SIZE))
-wPawn = pygame.image.load('wPawn.png')
-wPawn = pygame.transform.scale(wPawn, (PIECE_SIZE, PIECE_SIZE))
-# load black pieces
-bKing = pygame.image.load('bKing.png')
-bKing = pygame.transform.scale(bKing, (PIECE_SIZE, PIECE_SIZE))
-bQueen = pygame.image.load('bQueen.png')
-bQueen = pygame.transform.scale(bQueen, (PIECE_SIZE, PIECE_SIZE))
-bRook = pygame.image.load('bRook.png')
-bRook = pygame.transform.scale(bRook, (PIECE_SIZE, PIECE_SIZE))
-bBishop = pygame.image.load('bBishop.png')
-bBishop = pygame.transform.scale(bBishop, (PIECE_SIZE, PIECE_SIZE))
-bKnight = pygame.image.load('bKnight.png')
-bKnight = pygame.transform.scale(bKnight, (PIECE_SIZE, PIECE_SIZE))
-bPawn = pygame.image.load('bPawn.png')
-bPawn = pygame.transform.scale(bPawn, (PIECE_SIZE, PIECE_SIZE))
+# load white piece images
+wKingImg = pygame.image.load('wKing.png')
+wKingImg = pygame.transform.scale(wKingImg, (PIECE_SIZE, PIECE_SIZE))
+wQueenImg = pygame.image.load('wQueen.png')
+wQueenImg = pygame.transform.scale(wQueenImg, (PIECE_SIZE, PIECE_SIZE))
+wRookImg = pygame.image.load('wRook.png')
+wRookImg = pygame.transform.scale(wRookImg, (PIECE_SIZE, PIECE_SIZE))
+wBishopImg = pygame.image.load('wBishop.png')
+wBishopImg = pygame.transform.scale(wBishopImg, (PIECE_SIZE, PIECE_SIZE))
+wKnightImg = pygame.image.load('wKnight.png')
+wKnightImg = pygame.transform.scale(wKnightImg, (PIECE_SIZE, PIECE_SIZE))
+wPawnImg = pygame.image.load('wPawn.png')
+wPawnImg = pygame.transform.scale(wPawnImg, (PIECE_SIZE, PIECE_SIZE))
+# load black piece images
+bKingImg = pygame.image.load('bKing.png')
+bKingImg = pygame.transform.scale(bKingImg, (PIECE_SIZE, PIECE_SIZE))
+bQueenImg = pygame.image.load('bQueen.png')
+bQueenImg = pygame.transform.scale(bQueenImg, (PIECE_SIZE, PIECE_SIZE))
+bRookImg = pygame.image.load('bRook.png')
+bRookImg = pygame.transform.scale(bRookImg, (PIECE_SIZE, PIECE_SIZE))
+bBishopImg = pygame.image.load('bBishop.png')
+bBishopImg = pygame.transform.scale(bBishopImg, (PIECE_SIZE, PIECE_SIZE))
+bKnightImg = pygame.image.load('bKnight.png')
+bKnightImg = pygame.transform.scale(bKnightImg, (PIECE_SIZE, PIECE_SIZE))
+bPawnImg = pygame.image.load('bPawn.png')
+bPawnImg = pygame.transform.scale(bPawnImg, (PIECE_SIZE, PIECE_SIZE))
 
 image_dir = {
-    'wKing' : wKing,
-    'wQueen' : wQueen,
-    'wRook' : wRook,
-    'wBishop' : wBishop,
-    'wKnight' : wKnight,
-    'wPawn' : wPawn,
-    'bKing' : bKing,
-    'bQueen' : bQueen,
-    'bRook' : bRook,
-    'bBishop' : bBishop,
-    'bKnight' : bKnight,
-    'bPawn' : bPawn
+    'wKing' : wKingImg,
+    'wQueen' : wQueenImg,
+    'wRook' : wRookImg,
+    'wBishop' : wBishopImg,
+    'wKnight' : wKnightImg,
+    'wPawn' : wPawnImg,
+    'bKing' : bKingImg,
+    'bQueen' : bQueenImg,
+    'bRook' : bRookImg,
+    'bBishop' : bBishopImg,
+    'bKnight' : bKnightImg,
+    'bPawn' : bPawnImg
 }
 
 square_dir = {
@@ -152,6 +168,10 @@ square_dir = {
     (0,7) : 'h8',
 }
 
+inCheck = {
+    "white" : False,
+    "black" : False
+}
 
 def draw_chessboard(highlight, hlSquare):
     # Draw empty chess board
@@ -165,13 +185,9 @@ def draw_chessboard(highlight, hlSquare):
     # Draw pieces to the chessboard
     for row in range(len(gameBoard)):
         for col in range(len(gameBoard[row])):
-            try:
+            if gameBoard[row][col] != empty:
                 screen.blit(image_dir[gameBoard[row][col].img_id], (col*SQUARE_SIZE + BORDER_WIDTH, row*SQUARE_SIZE + BORDER_WIDTH))
-            # DELETE THIS AFTER ALL PIECES USE THEIR OWN CLASSES
-            except AttributeError:
-                screen.blit(image_dir[gameBoard[row][col]], (col*SQUARE_SIZE + BORDER_WIDTH, row*SQUARE_SIZE + BORDER_WIDTH))
-            except KeyError:
-                continue
+
     
 
 def selectSquare(pos):
@@ -194,10 +210,7 @@ def makeMove(moveStart, moveEnd):
         Returns:
         bool: True if move was made, False otherwise
     '''
-    if (moveStart == moveEnd):
-        return False
-    
-    moveCompleted = False
+
     # dismantle parameters
     pieceToMove = moveStart[1]
     startRow = moveStart[0][0]
@@ -206,9 +219,45 @@ def makeMove(moveStart, moveEnd):
     endRow = moveEnd[0][0]
     endCol = moveEnd[0][1]
 
-    moveCompleted = pieceToMove.moveLogic(gameBoard, pieceToCapture, startRow, startCol, endRow, endCol)
+    # If move is legal
+    if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol):
+        movePiece(startRow, startCol, endRow, endCol)
+        if selfInCheck(pieceToMove.color):
+            reverseMove(startRow, startCol, endRow, endCol, pieceToCapture)
+            # Move declined because of a check
+            return False   
+        else:
+            # Move accepted and done
+            return True
+    else:
+        # Move declined
+        return False
+    
+def selfInCheck(color):
+    if color == "white":
+        for row in range(8):
+            for col in range(8):
+                if gameBoard[row][col].color =="black":
+                    # If black checks white king
+                    if gameBoard[row][col].getMoves(gameBoard, row, col):
+                        return True
+    elif color == "black":
+        for row in range(8):
+            for col in range(8):
+                if gameBoard[row][col].color == "white":
+                    # If white checks black king
+                    if gameBoard[row][col].getMoves(gameBoard, row, col):
+                        return True
 
-    return moveCompleted
+
+def movePiece(startRow, startCol, endRow, endCol):
+    gameBoard[endRow][endCol] = gameBoard[startRow][startCol]
+    gameBoard[startRow][startCol] = empty
+
+def reverseMove(startRow, startCol, endRow, endCol, revivedPiece):
+    gameBoard[startRow][startCol] = gameBoard[endRow][endCol]
+    gameBoard[endRow][endCol] = revivedPiece
+
 
 def main():
     clock = pygame.time.Clock()
@@ -241,7 +290,6 @@ def main():
                     if makeMove(moveStart, moveEnd):
                         whiteToMove = not whiteToMove
     
-
         pygame.display.flip()
         clock.tick(30)
 

@@ -1,13 +1,14 @@
 from Piece import Piece
-from Empty import Empty
 
 class Bishop(Piece):
     def __init__(self, color, name, img_id):
         super().__init__(color, name, img_id)
     
-    def moveLogic(self, gameBoard, pieceToCapture, startRow, startCol, endRow, endCol):
+    def moveLogic(self, gameBoard, startRow, startCol, endRow, endCol):
+        if startRow == endRow and startCol == endCol:
+            return False
         # If moving diagonally
-        if abs(startRow - endRow) == abs(startCol - endCol):
+        elif abs(startRow - endRow) == abs(startCol - endCol):
             # If moving up left
             if (startRow - endRow) == (startCol - endCol) > 0:
                 for index in range(abs(startRow-endRow)-1):
@@ -29,9 +30,6 @@ class Bishop(Piece):
                         if gameBoard[startRow+1+index][startCol-1-index].color != None:
                             return False
             # Checking end square
-            if self.color != pieceToCapture.color:    
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
+            if self.color != gameBoard[endRow][endCol].color:    
                 return True
-        else:
-            return False
+        return False

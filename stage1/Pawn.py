@@ -1,13 +1,14 @@
 from Piece import Piece
-from Empty import Empty
 
 class Pawn(Piece):
     def __init__(self, color, name, img_id):
         super().__init__(color, name, img_id)
 
-    def moveLogic(self, gameBoard, pieceToCapture, startRow, startCol, endRow, endCol):
+    def moveLogic(self, gameBoard, startRow, startCol, endRow, endCol):
+        if startRow == endRow and startCol == endCol:
+            return False
         # WHITE PAWN LOGIC
-        if self.color == "white":
+        elif self.color == "white":
             # Promotion:
             # if pawn is on the 7th rank
             if startRow == 1:
@@ -17,22 +18,16 @@ class Pawn(Piece):
             # Moving one square up:
             # if start and end are on the same file AND end is 1 rank above start AND end square is empty
             elif endCol == startCol and endRow == startRow - 1 and gameBoard[endRow][endCol].color == None:
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
                 return True
 
             # Moving two squares up:
             # if starting square is on 2nd rank AND start and end are on the same file AND end is 2 ranks above start AND traveled squares are empty
             elif startRow == 6 and endCol == startCol and endRow == startRow - 2 and gameBoard[endRow][endCol].color == None == gameBoard[startRow-1][startCol].color:
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
                 return True
             
             # Capturing a piece (include this in promotion!):
             # if end is 1 rank above start AND end is 1 file next to start AND there is a black piece in end
-            elif (startRow-1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (pieceToCapture.color == "black"):
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
+            elif (startRow-1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (gameBoard[endRow][endCol].color == "black"):
                 return True
 
         # BLACK PAWN LOGIC
@@ -45,22 +40,16 @@ class Pawn(Piece):
             # Moving one square down:
             # if start and end are on the same file AND end is 1 rank above start AND end square is empty
             elif endCol == startCol and endRow == startRow + 1 and gameBoard[endRow][endCol].color == None:
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
                 return True
 
             # Moving two squares down:
             # if starting square is on 2nd rank AND start and end are on the same file AND end is 2 ranks above start AND traveled sqaures are empty
             elif startRow == 1 and endCol == startCol and endRow == startRow + 2 and gameBoard[endRow][endCol].color == None == gameBoard[startRow+1][startCol].color:
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
                 return True
             
             # Capturing a piece (include this in promotion!):
             # if end is 1 rank below start AND end is 1 file next to start AND there is a white piece in end
-            elif (startRow+1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (pieceToCapture.color == "white"):
-                gameBoard[endRow][endCol] = self
-                gameBoard[startRow][startCol] = Empty()
+            elif (startRow+1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (gameBoard[endRow][endCol].color == "white"):
                 return True
             
         return False
