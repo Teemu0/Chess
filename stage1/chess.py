@@ -219,43 +219,68 @@ def makeMove(moveStart, moveEnd, gameBoard):
     pieceToCapture = moveEnd[1]
     endRow = moveEnd[0][0]
     endCol = moveEnd[0][1]
+    color = pieceToMove.color
 
-    # If move is legal
-    moveIsLegal = pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol)
-    if moveIsLegal:
-        movePiece(startRow, startCol, endRow, endCol, gameBoard)
-        if selfInCheck(pieceToMove.color, gameBoard):
-            reverseMove(startRow, startCol, endRow, endCol, pieceToCapture, gameBoard)
+    # If move is legal by moveLogic
+    if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol):
+        # If move is legal by check logic
+        tempBoard = tryMove(startRow, startCol, endRow, endCol, gameBoard)
+        if pieceToMove.color == "white":
+            startCoords, endCoords = getAllMoves(tempBoard, "black")
+        else:
+            startCoords, endCoords = getAllMoves(tempBoard, "white")
+        if checkForCheck(tempBoard, endCoords):
             # Move declined because of a check
-            return False   
+            return False  
+        
         else:
             #If a pawn promotes
-            if moveIsLegal == 2:
+            if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol) == 2:
                 print("promotion")
-                promotePawn(gameBoard, endRow, endCol)
+                promotePawn(gameBoard, startRow, startCol, endRow, endCol)
+                return True
                 
             # Move accepted and done
+            movePiece(startRow, startCol, endRow, endCol, gameBoard)
             return True
     else:
         # Move declined
         return False
     
-def selfInCheck(color, gameBoard):
-    if color == "white":
-        for row in range(8):
-            for col in range(8):
-                if gameBoard[row][col].color =="black":
-                    # If black checks white king
-                    if gameBoard[row][col].getMoves(gameBoard, row, col)[0]:
-                        return True
-    elif color == "black":
-        for row in range(8):
-            for col in range(8):
-                if gameBoard[row][col].color == "white":
-                    # If white checks black king
-                    if gameBoard[row][col].getMoves(gameBoard, row, col)[0]:
-                        return True
+                    
+def getAllMoves(gameBoard, color):
+    '''
+        Gets all moves by color allowed by moveLogic.
+    '''
+    startingSquares = []
+    endingSquares = []
+    for row in range(8):
+        for col in range(8):
+            if gameBoard[row][col].color == color:
+                startingSquares.append((row, col))
+                endingSquares.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+    return startingSquares, endingSquares
 
+def checkForCheck(gameBoard, endingSquares):
+    '''
+        Use after getAllMoves. Assumes they both use same color
+    '''
+    for coords in endingSquares:
+        print(coords)
+        # if coords not empty
+        for index in range(len(coords)):
+            if gameBoard[coords[index][0]][coords[index][1]].name == "king":
+                return True
+    return False
+
+def tryMove(startRow, startCol, endRow, endCol, gameBoard):
+    '''
+        Makes a copy of the board and moves pieces in the copy board
+    '''
+    tempBoard = copy.deepcopy(gameBoard)
+    tempBoard[endRow][endCol] = tempBoard[startRow][startCol]
+    tempBoard[startRow][startCol] = empty
+    return tempBoard
 
 def movePiece(startRow, startCol, endRow, endCol, gameBoard):
     gameBoard[endRow][endCol] = gameBoard[startRow][startCol]
@@ -265,7 +290,15 @@ def reverseMove(startRow, startCol, endRow, endCol, revivedPiece, gameBoard):
     gameBoard[startRow][startCol] = gameBoard[endRow][endCol]
     gameBoard[endRow][endCol] = revivedPiece
 
-def promotePawn(gameBoard, row, col):
+# def checkForWin(gameBoard, whiteToMove):
+#     if whiteToMove:
+#         color = "white"
+#     else:
+#         color = "black"
+#     startCoords, endCoords = getAllMoves(gameBoard, color)
+
+
+def promotePawn(gameBoard, startRow, startCol, endRow, endCol):
         while True:
             playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
             if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
@@ -273,7 +306,7 @@ def promotePawn(gameBoard, row, col):
             else:
                 print("Invalid input")
         # If player is white    
-        if gameBoard[row][col].color == "white":
+        if gameBoard[startRow][startCol].color == "white":
             if playerInput in ["Q", "q"]:
                 newPiece = wQueen
             elif playerInput in ["R", "r"]:
@@ -283,7 +316,7 @@ def promotePawn(gameBoard, row, col):
             elif playerInput in ["K", "k"]:
                 newPiece = wKnight
         # If player is black
-        elif gameBoard[row][col].color == "black":
+        elif gameBoard[startRow][startCol].color == "black":
             if playerInput in ["Q", "q"]:
                 newPiece = bQueen
             elif playerInput in ["R", "r"]:
@@ -293,7 +326,8 @@ def promotePawn(gameBoard, row, col):
             elif playerInput in ["K", "k"]:
                 newPiece = bKnight
         if newPiece != None:
-            gameBoard[row][col] = newPiece
+            gameBoard[endRow][endCol] = newPiece
+            gameBoard[startRow][startCol] = empty
             print("Promotion successful")
         else:
             print("Promotion failed")
@@ -349,7 +383,8 @@ def main():
                         whiteToMove = not whiteToMove
                         # Evaluation.eval(gameBoard, whiteToMove)
                         # minimax(gameBoard, whiteToMove)
-                        Evaluation.checkWin(gameBoard, whiteToMove)
+                        # if checkForWin(gameBoard, whiteToMove):
+                        #     print("Game is over!")
     
         pygame.display.flip()
         clock.tick(30)

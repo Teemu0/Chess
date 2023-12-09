@@ -27,15 +27,13 @@ class Piece:
                   False, otherwise
         '''
         legalMoves = []
-        isCheck = False
+
         for row in range(8):
             for col in range(8):
                 # If move is legal
                 if self.moveLogic(gameboard, startRow, startCol, row, col):
                     legalMoves.append((row, col))
-                    # If opponent's king is under attack
-                    if gameboard[row][col].name == "king":
-                        isCheck = True
+                    
         #print(legalMoves, isCheck)
-        return (isCheck, legalMoves)
+        return legalMoves
     
