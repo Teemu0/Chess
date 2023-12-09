@@ -43,5 +43,4 @@ class Rook(Piece):
                         return False
             if self.color != gameBoard[endRow][endCol].color:    
                 return True
-        else:
-            return False
+        return False

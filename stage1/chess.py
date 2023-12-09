@@ -1,11 +1,9 @@
-''' Some explanations of the terms used
-    file = vertical strip on a chess board, think as column
-    rank = horizontal strip on a chess board, think as row
-'''
+#TODO: en passant
+#TODO: castling
+
 import pygame
 import math
 import time
-import move_logic
 from Piece import Piece
 from Empty import Empty
 from Pawn import Pawn
@@ -175,7 +173,7 @@ inCheck = {
     "black" : False
 }
 
-def draw_chessboard(highlight, hlSquare):
+def draw_chessboard(highlight, hlRow, hlCol):
     # Draw empty chess board
     for row in range(ROWS):
         for col in range(COLS):
@@ -183,7 +181,7 @@ def draw_chessboard(highlight, hlSquare):
             pygame.draw.rect(screen, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
     # Draw highlighted square
     if highlight:
-        pygame.draw.rect(screen, HIGHLIGHT_COLOR, (hlSquare[1] * SQUARE_SIZE, hlSquare[0] * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+        pygame.draw.rect(screen, HIGHLIGHT_COLOR, (hlCol * SQUARE_SIZE, hlRow * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
     # Draw pieces to the chessboard
     for row in range(len(gameBoard)):
         for col in range(len(gameBoard[row])):
@@ -193,94 +191,71 @@ def draw_chessboard(highlight, hlSquare):
     
 
 def selectSquare(pos):
-    rounded_coords = (math.floor(pos[1] / SQUARE_SIZE), math.floor(pos[0] / SQUARE_SIZE))   # values between 0-7, e.g. (7, 0) equals a1
-    selected_square = square_dir[rounded_coords]
-    selected_piece = gameBoard[rounded_coords[0]][rounded_coords[1]]
-    selection = (rounded_coords, selected_piece)
-    #print(f"clicked on coordinates {rounded_coords}")
-    #print(f'Selected piece is a {selected_piece} on square {selected_square}.')
-    return selection
+    row = math.floor(pos[1] / SQUARE_SIZE)
+    col = math.floor(pos[0] / SQUARE_SIZE)
+    return row, col
 
 
-def makeMove(moveStart, moveEnd, gameBoard):
-    ''' Checks whether move is legal, and moves the piece if so.
-        
-        Parameters:
-        - moveStart ((Tuple), Piece): The square with the piece to be moved. Tuple=coordinates, String=piece name.
-        - moveEnd ((Tuple), Piece): The square where the piece is to be moved.
-        
-        Returns:
-        bool: True if move was made, False otherwise
-    '''
-    # dismantle parameters
-    pieceToMove = moveStart[1]
-    startRow = moveStart[0][0]
-    startCol = moveStart[0][1]
-    pieceToCapture = moveEnd[1]
-    endRow = moveEnd[0][0]
-    endCol = moveEnd[0][1]
-    color = pieceToMove.color
-
-    # If move is legal by moveLogic
-    if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol):
-        # If move is legal by check logic
-        tempBoard = tryMove(startRow, startCol, endRow, endCol, gameBoard)
-        if pieceToMove.color == "white":
-            startCoords, endCoords = getAllMoves(tempBoard, "black")
-        else:
-            startCoords, endCoords = getAllMoves(tempBoard, "white")
-        if checkForCheck(tempBoard, endCoords):
-            # Move declined because of a check
-            return False  
-        
-        else:
-            #If a pawn promotes
-            if pieceToMove.moveLogic(gameBoard, startRow, startCol, endRow, endCol) == 2:
-                print("promotion")
+def make_move(gameBoard, startRow, startCol, endRow, endCol):
+    moveType = move_logic(gameBoard, startRow, startCol, endRow, endCol) # True(normal move), False(illegal move), 2(promotion)
+    if moveType != False:
+        if check_logic(gameBoard, startRow, startCol, endRow, endCol):
+            if moveType != 2:
+                movePiece(startRow, startCol, endRow, endCol, gameBoard)
+                return True
+            else:
                 promotePawn(gameBoard, startRow, startCol, endRow, endCol)
                 return True
-                
-            # Move accepted and done
-            movePiece(startRow, startCol, endRow, endCol, gameBoard)
-            return True
-    else:
-        # Move declined
-        return False
+    return False
     
+def move_logic(gameBoard, startRow, startCol, endRow, endCol):
+    '''
+        Returns:
+        bool True: if move is allowed by piece's logic
+        bool False: otherwise
+    '''
+    return gameBoard[startRow][startCol].moveLogic(gameBoard, startRow, startCol, endRow, endCol)
+
+def check_logic(gameBoard, startRow, startCol, endRow, endCol):
+    ''' 
+        Checks if a move does not lead to a self check.
+        Returns:
+        bool True: if move does not lead to self check
+        bool False: otherwise
+    '''
+    tempBoard = copy.deepcopy(gameBoard)
+    movePiece(startRow, startCol, endRow, endCol, tempBoard)
+    # If moving player is white: get all moves for black
+    if tempBoard[endRow][endCol].color == "white":
+        startCoords, endCoords = getAllMoves(tempBoard, "black")
+    else:
+        startCoords, endCoords = getAllMoves(tempBoard, "white")
+    for coords in endCoords:
+        for index in range(len(coords)):
+            if tempBoard[coords[index][0]][coords[index][1]].name == "king":
+                # Move leads to a self check
+                return False
+    # Move does not lead to a self check
+    return True
+
                     
 def getAllMoves(gameBoard, color):
     '''
         Gets all moves by color allowed by moveLogic.
+        Returns:
+        startCoords e.g. [(startRow1, startCol1), (startRow2, startCol2)]
+
     '''
-    startingSquares = []
-    endingSquares = []
+    startCoords = []
+    endCoords = []
     for row in range(8):
         for col in range(8):
             if gameBoard[row][col].color == color:
-                startingSquares.append((row, col))
-                endingSquares.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-    return startingSquares, endingSquares
+                startCoords.append((row, col))
+                endCoords.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+    return startCoords, endCoords
 
-def checkForCheck(gameBoard, endingSquares):
-    '''
-        Use after getAllMoves. Assumes they both use same color
-    '''
-    for coords in endingSquares:
-        print(coords)
-        # if coords not empty
-        for index in range(len(coords)):
-            if gameBoard[coords[index][0]][coords[index][1]].name == "king":
-                return True
-    return False
 
-def tryMove(startRow, startCol, endRow, endCol, gameBoard):
-    '''
-        Makes a copy of the board and moves pieces in the copy board
-    '''
-    tempBoard = copy.deepcopy(gameBoard)
-    tempBoard[endRow][endCol] = tempBoard[startRow][startCol]
-    tempBoard[startRow][startCol] = empty
-    return tempBoard
 
 def movePiece(startRow, startCol, endRow, endCol, gameBoard):
     gameBoard[endRow][endCol] = gameBoard[startRow][startCol]
@@ -290,47 +265,97 @@ def reverseMove(startRow, startCol, endRow, endCol, revivedPiece, gameBoard):
     gameBoard[startRow][startCol] = gameBoard[endRow][endCol]
     gameBoard[endRow][endCol] = revivedPiece
 
-# def checkForWin(gameBoard, whiteToMove):
-#     if whiteToMove:
-#         color = "white"
-#     else:
-#         color = "black"
-#     startCoords, endCoords = getAllMoves(gameBoard, color)
-
 
 def promotePawn(gameBoard, startRow, startCol, endRow, endCol):
-        while True:
-            playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
-            if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
-                break
-            else:
-                print("Invalid input")
-        # If player is white    
-        if gameBoard[startRow][startCol].color == "white":
-            if playerInput in ["Q", "q"]:
-                newPiece = wQueen
-            elif playerInput in ["R", "r"]:
-                newPiece = wRook
-            elif playerInput in ["B", "b"]:
-                newPiece = wBishop
-            elif playerInput in ["K", "k"]:
-                newPiece = wKnight
-        # If player is black
-        elif gameBoard[startRow][startCol].color == "black":
-            if playerInput in ["Q", "q"]:
-                newPiece = bQueen
-            elif playerInput in ["R", "r"]:
-                newPiece = bRook
-            elif playerInput in ["B", "b"]:
-                newPiece = bBishop
-            elif playerInput in ["K", "k"]:
-                newPiece = bKnight
-        if newPiece != None:
-            gameBoard[endRow][endCol] = newPiece
-            gameBoard[startRow][startCol] = empty
-            print("Promotion successful")
+    '''
+    Replaces movePiece() in case of a pawn promotion.
+    '''
+    while True:
+        playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
+        if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
+            break
         else:
-            print("Promotion failed")
+            print("Invalid input")
+    # If player is white    
+    if gameBoard[startRow][startCol].color == "white":
+        if playerInput in ["Q", "q"]:
+            newPiece = wQueen
+        elif playerInput in ["R", "r"]:
+            newPiece = wRook
+        elif playerInput in ["B", "b"]:
+            newPiece = wBishop
+        elif playerInput in ["K", "k"]:
+            newPiece = wKnight
+    # If player is black
+    elif gameBoard[startRow][startCol].color == "black":
+        if playerInput in ["Q", "q"]:
+            newPiece = bQueen
+        elif playerInput in ["R", "r"]:
+            newPiece = bRook
+        elif playerInput in ["B", "b"]:
+            newPiece = bBishop
+        elif playerInput in ["K", "k"]:
+            newPiece = bKnight
+    if newPiece != None:
+        gameBoard[endRow][endCol] = newPiece
+        gameBoard[startRow][startCol] = empty
+        print("Promotion successful")
+    else:
+        print("Promotion failed")
+
+def isGameOver(gameBoard, whiteToMove):
+    '''
+        Checks if the game is over.
+        Returns:
+        int -1: game is not over
+        int 0: stalemate
+        int 1: white wins
+        int 2: black wins
+    '''
+    # 1. Get all moves
+    if whiteToMove:
+        startCoords, endCoords = getAllMoves(gameBoard, "white")
+    else:
+        startCoords, endCoords = getAllMoves(gameBoard, "black")
+
+    # 2. Try all the moves
+    for startIndex in range(len(startCoords)):
+         for endIndex in range(len(endCoords[startIndex])):
+            tempBoard = copy.deepcopy(gameBoard)
+            startRow = startCoords[startIndex][0]
+            startCol = startCoords[startIndex][1]
+            endRow = endCoords[startIndex][endIndex][0]
+            endCol = endCoords[startIndex][endIndex][1]
+            if make_move(tempBoard, startRow, startCol, endRow, endCol):
+                # Found a legal move -> game is not over
+                return -1
+    
+    # No legal moves found. Game is over. Is it a checkmate, or a stalemate?
+    # 3. Is own king in check?
+
+    if whiteToMove:
+        startCoords, endCoords = getAllMoves(gameBoard, "black")
+    else:
+        startCoords, endCoords = getAllMoves(gameBoard, "white")
+    
+    for coords in endCoords:
+        for index in range(len(coords)):
+            if tempBoard[coords[index][0]][coords[index][1]].name == "king":
+                # Own king is in check -> opponent has a checkmate
+                if whiteToMove:
+                    return 2
+                else:
+                    return 1
+    # Stalemate
+    return 0
+
+def printResult(result):
+    if result == 0:
+        print("Draw! It is a stalemate.")
+    elif result == 1:
+        print("White wins!")
+    elif result == 2:
+        print("Black wins!")
 
 
 def minimax(gameBoard, maximizing):
@@ -356,12 +381,14 @@ def main():
     running = True  # is game running?
     highlighted = False # boolean, whether a piece is selected on the board with a mouse click
     whiteToMove = True  # whose turn is it to move
-    moveStart = [(0,0), ""]  # initialize variable. uses format: [(7,0), "wRook"]
+    startRow = 0 # Initialize for draw_chessboard(). Will not be used before getting real values
+    startCol = 0
+    result = -1 # -1(game not over), 0(stalemate), 1(white wins), 2(black wins)
 
     while running:
 
         screen.fill(DARK)
-        draw_chessboard(highlighted, moveStart[0])
+        draw_chessboard(highlighted, startRow, startCol)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -369,22 +396,21 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not highlighted:
-                    moveStart = selectSquare(event.pos)
-                    if whiteToMove and (moveStart[1].color == "white"):
+                    startRow, startCol = selectSquare(event.pos)
+                    if whiteToMove and (gameBoard[startRow][startCol].color == "white"):
                         highlighted = True
-                    elif not whiteToMove and (moveStart[1].color == "black"):
+                    elif not whiteToMove and (gameBoard[startRow][startCol].color == "black"):
                         highlighted = True
                 else:
-                    moveEnd = selectSquare(event.pos)
+                    endRow, endCol = selectSquare(event.pos)
                     highlighted = False
-                    print(f"Starting sq: {moveStart}")
-                    print(f"Ending sq: {moveEnd}")
-                    if makeMove(moveStart, moveEnd, gameBoard):
+                    if make_move(gameBoard, startRow, startCol, endRow, endCol):
                         whiteToMove = not whiteToMove
-                        # Evaluation.eval(gameBoard, whiteToMove)
-                        # minimax(gameBoard, whiteToMove)
-                        # if checkForWin(gameBoard, whiteToMove):
-                        #     print("Game is over!")
+                        # If game is over
+                        result = isGameOver(gameBoard, whiteToMove)
+                        if result != -1:
+                            printResult(result)
+
     
         pygame.display.flip()
         clock.tick(30)

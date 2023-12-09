@@ -13,5 +13,4 @@ class Knight(Piece):
             # Checking end square
             if self.color != gameBoard[endRow][endCol].color:    
                 return True
-        else:
-            return False
+        return False
