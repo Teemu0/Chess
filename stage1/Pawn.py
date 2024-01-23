@@ -10,29 +10,15 @@ class Pawn(Piece):
             Returns:
             bool: True if move is legal
                   False if move is not legal
-            int : 2 if move is legal and promotes a pawn
         '''
         if startRow == endRow and startCol == endCol:
             return False
         # WHITE PAWN LOGIC
         elif self.color == "white":
-            # Promotion:
-            # if pawn is on the 7th rank
-            if startRow == 1:
-                # Capturing a piece:
-                # if end is 1 rank above start AND end is 1 file next to start AND there is a black piece in end
-                if (startRow-1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (gameBoard[endRow][endCol].color == "black"):
-                    return 2
-                # Moving one square up:
-                # if start and end are on the same file AND end is 1 rank above start AND end square is empty
-                elif endCol == startCol and endRow == startRow - 1 and gameBoard[endRow][endCol].color == None:
-                    return 2
-                else:
-                    return False
 
             # Moving one square up:
             # if start and end are on the same file AND end is 1 rank above start AND end square is empty
-            elif endCol == startCol and endRow == startRow - 1 and gameBoard[endRow][endCol].color == None:
+            if endCol == startCol and endRow == startRow - 1 and gameBoard[endRow][endCol].color == None:
                 return True
 
             # Moving two squares up:
@@ -47,22 +33,10 @@ class Pawn(Piece):
 
         # BLACK PAWN LOGIC
         elif self.color == "black":
-            # Promotion:
-            if startRow == 6:
-                # Capturing a piece (include this in promotion!):
-                # if end is 1 rank below start AND end is 1 file next to start AND there is a white piece in end
-                if (startRow+1 == endRow) and (startCol == endCol-1 or startCol == endCol+1) and (gameBoard[endRow][endCol].color == "white"):
-                    return 2
-                # Moving one square down:
-                # if start and end are on the same file AND end is 1 rank above start AND end square is empty
-                elif endCol == startCol and endRow == startRow + 1 and gameBoard[endRow][endCol].color == None:
-                    return 2
-                else:
-                    return False
 
             # Moving one square down:
             # if start and end are on the same file AND end is 1 rank above start AND end square is empty
-            elif endCol == startCol and endRow == startRow + 1 and gameBoard[endRow][endCol].color == None:
+            if endCol == startCol and endRow == startRow + 1 and gameBoard[endRow][endCol].color == None:
                 return True
 
             # Moving two squares down:
