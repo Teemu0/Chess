@@ -1,5 +1,4 @@
-#TODO: en passant
-#TODO: castling
+#TODO: check en passant; implemented quickly, can contain bugs.
 
 import pygame
 import math
@@ -60,6 +59,8 @@ gameBoard = [
     [wPawn,wPawn,wPawn,wPawn,wPawn,wPawn,wPawn,wPawn],
     [wRook_1,wKnight,wBishop,wQueen,wKing,wBishop,wKnight,wRook_2]
     ]
+
+enPassantSquare = (None, None)  # type (row, col)
 
 # load white piece images
 wKingImg = pygame.image.load('wKing.png')
@@ -215,7 +216,7 @@ def processMove(gameBoard, startRow, startCol, endRow, endCol):
         return False
 
 def moveIsLegal(gameBoard, startRow, startCol, endRow, endCol):
-    if move_logic(gameBoard, startRow, startCol, endRow, endCol):
+    if move_logic(gameBoard, startRow, startCol, endRow, endCol) or moveIsEnPassant(gameBoard, startRow, startCol, endRow, endCol):
         if check_logic(gameBoard, startRow, startCol, endRow, endCol):
             if moveIsCastle(gameBoard, startRow, startCol, endRow, endCol):
                 if castling_logic(gameBoard, startRow, startCol, endRow, endCol):
@@ -229,8 +230,11 @@ def makeTheMove(startRow, startCol, endRow, endCol, gameBoard):
         promotePawn(gameBoard, startRow, startCol, endRow, endCol)
     elif moveIsCastle(gameBoard, startRow, startCol, endRow, endCol):
         castle(gameBoard, startRow, startCol, endRow, endCol)
+    elif moveIsEnPassant(gameBoard, startRow, startCol, endRow, endCol):
+        moveEnPassant(gameBoard, startRow, startCol, endRow, endCol)
     else:
         movePiece(startRow, startCol, endRow, endCol, gameBoard)
+    updateEnPassantSquare(startRow, startCol, endRow, endCol, gameBoard)
 
 def moveIsCastle(gameBoard, startRow, startCol, endRow, endCol):
     '''
@@ -257,7 +261,49 @@ def moveIsPromotion(gameBoard, startRow, startCol):
             return True
     else:
         return False
+
+# TODO:
+#Functions needed for en passant:
+
+# DONE update enpassantsquare: stores the "enpassable" square in a global variable
+# DONE moveIsEnPassant(): checks from user input if move is en passant
+# DONE MoveEnPassant: moves the pieces
+#
+
+def moveIsEnPassant(gameBoard, startRow, startCol, endRow, endCol):
+    #if enpassantsquare[0] != None
+    if enPassantSquare != (None, None):
+        #For white pawn
+        if gameBoard[startRow][startCol].color == "white" and (gameBoard[startRow][startCol].name == "pawn"):
+            # if startRow is on rank 5 AND endRow is on rank 6 AND endCol is 1 file from startCol
+            if (startRow == 3) and (endRow == 2) and (abs(startCol - endCol) == 1):
+                # if endSquare is enpassantSquare
+                if (endRow, endCol) == enPassantSquare:
+                    print("moveIsEnPassant(): attempted to make en passant")
+                    return True
+        # For black pawn
+        elif gameBoard[startRow][startCol].color == "black" and (gameBoard[startRow][startCol].name == "pawn"):
+            if (startRow == 4) and (endRow == 5) and (abs(startCol - endCol) == 1):
+                if (endRow, endCol) == enPassantSquare:
+                    print("moveIsEnPassant(): attempted to make en passant")
+                    return True
+    return False
+
+def moveEnPassant(gameBoard, startRow, startCol, endRow, endCol):
+    gameBoard[endRow][endCol] = gameBoard[startRow][startCol]
+    gameBoard[startRow][startCol] = empty
+    gameBoard[startRow][endCol] = empty
+
+def updateEnPassantSquare(startRow, startCol, endRow, endCol, gameBoard):
+    global enPassantSquare
+    if gameBoard[endRow][endCol].name == "pawn" and abs(startRow - endRow) == 2:
+        enPassantSquare = (int(startRow - (startRow - endRow) / 2), startCol)
+    else: 
+        enPassantSquare = (None, None)
+    print(f"updateEnPassantSquare(): en passant square (row, col) = {enPassantSquare}")
     
+
+
 def move_logic(gameBoard, startRow, startCol, endRow, endCol):
     '''
         Returns:

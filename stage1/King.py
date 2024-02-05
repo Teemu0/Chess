@@ -14,7 +14,7 @@ class King(Piece):
             # Checking end square
             if self.color != gameBoard[endRow][endCol].color:    
                 return True
-        
+        # Castling
         elif (self.canCastle == True) and (abs(endCol-startCol) == 2) and (startRow == endRow):
             return True
         
