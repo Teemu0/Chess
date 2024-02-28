@@ -3,6 +3,7 @@
 import pygame
 import math
 import time
+import random
 from Piece import Piece
 from Empty import Empty
 from Pawn import Pawn
@@ -61,6 +62,7 @@ gameBoard = [
     ]
 
 enPassantSquare = (None, None)  # type (row, col)
+gameTypes = ("playerVsPlayer", "playerVsAI")
 
 # load white piece images
 wKingImg = pygame.image.load('wKing.png')
@@ -417,6 +419,8 @@ def castling_logic(gameBoard, startRow, startCol, endRow, endCol):
 def getAllMoves(gameBoard, color):
     '''
         Gets all moves by color allowed by moveLogic.
+        #TODO: mistake: counts castling even when castling is not possible
+                check if counts en passant
         Returns:
         startCoords e.g. [(startRow1, startCol1), (startRow2, startCol2)]
 
@@ -546,6 +550,52 @@ def printResult(result):
     elif result == 2:
         print("Black wins!")
 
+def getBestMove(gameBoard, whiteToMove):
+    possibleMoves = []
+    materialCount = Evaluation.countMaterial(gameBoard)
+    bestMove = (None, None, None, None) #type (startRow, startCol, endRow, endCol)
+    #1. get all moves
+    if whiteToMove:
+        startCoords, endCoords = getAllMoves(gameBoard, "white")
+    else:
+        startCoords, endCoords = getAllMoves(gameBoard, "black")
+    print(f"startCoords = {startCoords}")
+    print(f"endCoords = {endCoords}")
+
+    # 2. Try all the moves and count their material balance
+    for startIndex in range(len(startCoords)):
+         for endIndex in range(len(endCoords[startIndex])):
+            tempBoard = copy.deepcopy(gameBoard)
+            startRow = startCoords[startIndex][0]
+            startCol = startCoords[startIndex][1]
+            endRow = endCoords[startIndex][endIndex][0]
+            endCol = endCoords[startIndex][endIndex][1]
+            if moveIsLegal(tempBoard, startRow, startCol, endRow, endCol):
+                makeTheMove(startRow, startCol, endRow, endCol, tempBoard)
+                possibleMove = (startRow, startCol, endRow, endCol)
+                possibleMoves.append(possibleMove)
+                tempMaterialCount = Evaluation.countMaterial(tempBoard)
+                if whiteToMove:
+                    if tempMaterialCount > materialCount:
+                        bestMove = possibleMove
+                elif not whiteToMove:
+                    if tempMaterialCount < materialCount:
+                        bestMove = possibleMove
+    print(f"possibleMoves = {possibleMoves}")
+    
+    # 3. Return the move with the best material balance.
+    # Select random move
+    if bestMove == (None, None, None, None):
+        randomIndex = random.randint(0, len(possibleMoves)-1)
+        bestMove = possibleMoves[randomIndex]
+    print(f"bestMove = {bestMove}")
+    return bestMove
+        
+
+
+
+
+
 # DELETE THIS
 # def minimax(gameBoard, maximizing):
 #     # Try every legal move
@@ -567,22 +617,35 @@ def printResult(result):
 
 def main():
     clock = pygame.time.Clock()
-    running = True  # is game running?
+    setting_up = True
+    running = False # is game running?
+    state_playerVsPlayer = False
+    state_playerVsAI = False
+
     highlighted = False # boolean, whether a piece is selected on the board with a mouse click
     whiteToMove = True  # whose turn is it to move
+    gameType = gameTypes[1] # gameTypes[0] = playerVsPlayer, gameTypes[1] = playerVsAI
     startRow = 0 # Initialize for draw_chessboard(). Will not be used before getting real values
     startCol = 0
     result = -1 # -1(game not over), 0(stalemate), 1(white wins), 2(black wins)
+    while setting_up:
+        user_input = input("Select color [W] for white or [B] for black or [P] for practice board")
+        if user_input in ["p", "P"]:
+            setting_up = False
+            state_playerVsPlayer = True
+            running = True
+        elif user_input in ["w", "W"]:
+            setting_up = False
+            state_playerVsAI = True
+            running = True
 
-    while running:
+    while running and state_playerVsPlayer:
 
         screen.fill(DARK)
         draw_chessboard(highlighted, startRow, startCol)
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not highlighted:
                     startRow, startCol = selectSquare(event.pos)
@@ -599,8 +662,50 @@ def main():
                         result = isGameOver(gameBoard, whiteToMove)
                         if result != -1:
                             printResult(result)
+                        Evaluation.countMaterial(gameBoard)
+        pygame.display.flip()
+        clock.tick(30)
 
-    
+    while running and state_playerVsAI:
+        screen.fill(DARK)
+        draw_chessboard(highlighted, startRow, startCol)
+        if whiteToMove:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if not highlighted:
+                        startRow, startCol = selectSquare(event.pos)
+                        if (gameBoard[startRow][startCol].color == "white"):
+                            highlighted = True
+                    else:
+                        endRow, endCol = selectSquare(event.pos)
+                        highlighted = False
+                        if processMove(gameBoard, startRow, startCol, endRow, endCol):
+                            whiteToMove = not whiteToMove
+                            result = isGameOver(gameBoard, whiteToMove)
+                            if result != -1:
+                                printResult(result)
+                                running = False
+
+        elif not whiteToMove and running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+            bestMove = getBestMove(gameBoard, whiteToMove)
+            startRow = bestMove[0]
+            startCol = bestMove[1]
+            endRow = bestMove[2]
+            endCol = bestMove[3]
+            if processMove(gameBoard, startRow, startCol, endRow, endCol):
+                whiteToMove = not whiteToMove
+                result = isGameOver(gameBoard, whiteToMove)
+                if result != -1:
+                    printResult(result)
+            else:
+                print("main: error: best move is not playable")
+
         pygame.display.flip()
         clock.tick(30)
 

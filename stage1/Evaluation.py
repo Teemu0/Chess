@@ -13,7 +13,7 @@ class Evaluation():
     def __init__(self) -> None:
         pass
 
-    def eval(gameBoard, whiteToMove):
+    def countMaterial(gameBoard):
         # 1: Count material
         whiteMaterial = 0
         blackMaterial = 0
@@ -26,9 +26,9 @@ class Evaluation():
 
         print(f"White material count: {whiteMaterial}")
         print(f"Black material count: {blackMaterial}")
-        evaluation = whiteMaterial - blackMaterial
-        print(f"Evaluation: {evaluation}")
-        return evaluation
+        materialBalance = whiteMaterial - blackMaterial
+        print(f"Material balance: {materialBalance}")
+        return materialBalance
     
     def checkWin(gameBoard, whiteToMove):
         '''
