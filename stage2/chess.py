@@ -198,21 +198,21 @@ def selectSquare(pos):
     col = math.floor(pos[0] / SQUARE_SIZE)
     return row, col
 
-def make_move(gameBoard, startRow, startCol, endRow, endCol):
-    moveType = move_logic(gameBoard, startRow, startCol, endRow, endCol) # True(normal move), False(illegal move), 2(promotion)
-    if moveType != False:
-        if check_logic(gameBoard, startRow, startCol, endRow, endCol):
-            #move_is_promotion
-            if moveIsPromotion(gameBoard, startRow, startCol):
-                promotePawn(gameBoard, startRow, startCol, endRow, endCol) 
-            else:
-                movePiece(startRow, startCol, endRow, endCol, gameBoard)
-            return True              
-    return False
+# def make_move(gameBoard, startRow, startCol, endRow, endCol):
+#     moveType = move_logic(gameBoard, startRow, startCol, endRow, endCol) # True(normal move), False(illegal move), 2(promotion)
+#     if moveType != False:
+#         if check_logic(gameBoard, startRow, startCol, endRow, endCol):
+#             #move_is_promotion
+#             if moveIsPromotion(gameBoard, startRow, startCol):
+#                 promotePawn(gameBoard, startRow, startCol, endRow, endCol) 
+#             else:
+#                 movePiece(startRow, startCol, endRow, endCol, gameBoard)
+#             return True              
+#     return False
 
-def processMove(gameBoard, startRow, startCol, endRow, endCol):
+def processMove(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=True):
     if moveIsLegal(gameBoard, startRow, startCol, endRow, endCol):
-        makeTheMove(startRow, startCol, endRow, endCol, gameBoard)
+        makeTheMove(startRow, startCol, endRow, endCol, gameBoard, moveByComputer)
         return True
     else:
         return False
@@ -227,9 +227,9 @@ def moveIsLegal(gameBoard, startRow, startCol, endRow, endCol):
                 return True
     return False
 
-def makeTheMove(startRow, startCol, endRow, endCol, gameBoard):
+def makeTheMove(startRow, startCol, endRow, endCol, gameBoard, moveByComputer=True):
     if moveIsPromotion(gameBoard, startRow, startCol):
-        promotePawn(gameBoard, startRow, startCol, endRow, endCol)
+        promotePawn(gameBoard, startRow, startCol, endRow, endCol, moveByComputer)
     elif moveIsCastle(gameBoard, startRow, startCol, endRow, endCol):
         castle(gameBoard, startRow, startCol, endRow, endCol)
     elif moveIsEnPassant(gameBoard, startRow, startCol, endRow, endCol):
@@ -325,14 +325,13 @@ def check_logic(gameBoard, startRow, startCol, endRow, endCol):
     movePiece(startRow, startCol, endRow, endCol, tempBoard)
     # If moving player is white: get all moves for black
     if tempBoard[endRow][endCol].color == "white":
-        startCoords, endCoords = getAllMoves(tempBoard, "black")
+        possibleMoves = getAllMoves(tempBoard, "black")
     else:
-        startCoords, endCoords = getAllMoves(tempBoard, "white")
-    for coords in endCoords:
-        for index in range(len(coords)):
-            if tempBoard[coords[index][0]][coords[index][1]].name == "king":
-                # Move leads to a self check
-                return False
+        possibleMoves = getAllMoves(tempBoard, "white")
+    for move in possibleMoves:
+        if tempBoard[move[2]][move[3]].name == "king":
+            # Move leads to a self check
+            return False
     # Move does not lead to a self check
     return True
 
@@ -340,99 +339,91 @@ def castling_logic(gameBoard, startRow, startCol, endRow, endCol):
     color = gameBoard[startRow][startCol].color
     # Castling king side:  
     if endCol-startCol == 2:
-        if gameBoard[startRow][startCol+1].name == None:
-            if gameBoard[startRow][startCol+2].name == None:
-                if gameBoard[startRow][startCol+3].name == "rook" and gameBoard[startRow][startCol+3].color == color:
-                    if gameBoard[startRow][startCol+3].canCastle == True:
-                        print("Castling king side possible by move logic")
-                        # Check if opponent is attacking any of the castling squares
-                        squaresUnderAttack = []
-                        # For white
-                        if color == "white":
-                            for row in range(8):
-                                for col in range(8):
-                                    if gameBoard[row][col].color == "black":
-                                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-                            squaresNeeded = [(7, 4), (7,5), (7,6)]
-                            for square in squaresNeeded:
-                                for index in range(len(squaresUnderAttack)):
-                                    if square in squaresUnderAttack[index]:
-                                        print("Castling king side impossible; needed squares under attack")
-                                        return False
-                            print("Castling king side fully OK")
-                            return True
-                        # For black            
-                        elif color == "black":
-                            for row in range(8):
-                                for col in range(8):
-                                    if gameBoard[row][col].color == "white":
-                                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-                            squaresNeeded = [(0, 4), (0,5), (0,6)]
-                            for square in squaresNeeded:
-                                for index in range(len(squaresUnderAttack)):
-                                    if square in squaresUnderAttack[index]:
-                                        print("Castling king side impossible; needed squares under attack")
-                                        return False
-                            print("Castling king side fully OK")
-                            return True
+        # Check if opponent is attacking any of the castling squares
+        squaresUnderAttack = []
+        # For white
+        if color == "white":
+            for row in range(8):
+                for col in range(8):
+                    if gameBoard[row][col].color == "black":
+                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+            squaresNeeded = [(7, 4), (7,5), (7,6)]
+            for square in squaresNeeded:
+                for index in range(len(squaresUnderAttack)):
+                    if square in squaresUnderAttack[index]:
+                        print("Castling king side impossible; needed squares under attack")
+                        return False
+            print("Castling king side fully OK")
+            return True
+        # For black            
+        elif color == "black":
+            for row in range(8):
+                for col in range(8):
+                    if gameBoard[row][col].color == "white":
+                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+            squaresNeeded = [(0, 4), (0,5), (0,6)]
+            for square in squaresNeeded:
+                for index in range(len(squaresUnderAttack)):
+                    if square in squaresUnderAttack[index]:
+                        print("Castling king side impossible; needed squares under attack")
+                        return False
+            print("Castling king side fully OK")
+            return True
     # Castling queen side:  
     elif endCol-startCol == -2:
-        if gameBoard[startRow][startCol-1].name == None:
-            if gameBoard[startRow][startCol-2].name == None:
-                if gameBoard[startRow][startCol-3].name == None:
-                    if gameBoard[startRow][startCol-4].name == "rook" and gameBoard[startRow][startCol-4].color == color:
-                        if gameBoard[startRow][startCol-4].canCastle == True:
-                            print("Castling queen side possible by move logic")
-                            # Check if opponent is attacking any of the castling squares
-                            squaresUnderAttack = []
-                            # For white
-                            if color == "white":
-                                for row in range(8):
-                                    for col in range(8):
-                                        if gameBoard[row][col].color == "black":
-                                            squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-                                squaresNeeded = [(7, 4), (7,3), (7,2)]
-                                for square in squaresNeeded:
-                                    for index in range(len(squaresUnderAttack)):
-                                        if square in squaresUnderAttack[index]:
-                                            print("Castling queen side impossible; needed squares under attack")
-                                            return False
-                                print("Castling queen side fully OK")
-                                return True
-                            # For black
-                            elif color == "black":
-                                for row in range(8):
-                                    for col in range(8):
-                                        if gameBoard[row][col].color == "white":
-                                            squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-                                squaresNeeded = [(0, 4), (0,3), (0,2)]
-                                for square in squaresNeeded:
-                                    for index in range(len(squaresUnderAttack)):
-                                        if square in squaresUnderAttack[index]:
-                                            print("Castling queen side impossible; needed squares under attack")
-                                            return False
-                                print("Castling queen side fully OK")
-                                return True
-    else:
-        return False
+        # Check if opponent is attacking any of the castling squares
+        squaresUnderAttack = []
+        # For white
+        if color == "white":
+            for row in range(8):
+                for col in range(8):
+                    if gameBoard[row][col].color == "black":
+                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+            squaresNeeded = [(7, 4), (7,3), (7,2)]
+            for square in squaresNeeded:
+                for index in range(len(squaresUnderAttack)):
+                    if square in squaresUnderAttack[index]:
+                        print("Castling queen side impossible; needed squares under attack")
+                        return False
+            print("Castling queen side fully OK")
+            return True
+        # For black
+        elif color == "black":
+            for row in range(8):
+                for col in range(8):
+                    if gameBoard[row][col].color == "white":
+                        squaresUnderAttack.append(gameBoard[row][col].getMoves(gameBoard, row, col))
+            squaresNeeded = [(0, 4), (0,3), (0,2)]
+            for square in squaresNeeded:
+                for index in range(len(squaresUnderAttack)):
+                    if square in squaresUnderAttack[index]:
+                        print("Castling queen side impossible; needed squares under attack")
+                        return False
+            print("Castling queen side fully OK")
+            return True
+    return False
                
 def getAllMoves(gameBoard, color):
     '''
-        Gets all moves by color allowed by moveLogic.
+        Gets all moves by color allowed by moveLogic only!!; Does not account for check logic!
         #TODO: mistake: counts castling even when castling is not possible
                 check if counts en passant
         Returns:
-        startCoords e.g. [(startRow1, startCol1), (startRow2, startCol2)]
+        a list of moves [(startRow, startCol, endRow, endCol)]
 
     '''
-    startCoords = []
-    endCoords = []
+
+    possibleMoves = []
     for row in range(8):
         for col in range(8):
             if gameBoard[row][col].color == color:
-                startCoords.append((row, col))
-                endCoords.append(gameBoard[row][col].getMoves(gameBoard, row, col))
-    return startCoords, endCoords
+                endCoords = gameBoard[row][col].getMoves(gameBoard, row, col)
+                if endCoords:
+                    for coords in endCoords:
+                        possibleMoves.append((row, col, coords[0], coords[1]))
+
+    print(f"getAllMoves: possible moves for {color}: possibleMoves = {possibleMoves}")
+    return possibleMoves
 
 def movePiece(startRow, startCol, endRow, endCol, gameBoard):
     if gameBoard[startRow][startCol].name in  ("rook", "king"):
@@ -444,38 +435,45 @@ def reverseMove(startRow, startCol, endRow, endCol, revivedPiece, gameBoard):
     gameBoard[startRow][startCol] = gameBoard[endRow][endCol]
     gameBoard[endRow][endCol] = revivedPiece
 
-def promotePawn(gameBoard, startRow, startCol, endRow, endCol):
+def promotePawn(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=True):
     '''
     Replaces movePiece() in case of a pawn promotion.
     '''
-    while True:
-        playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
-        if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
-            break
-        else:
-            print("Invalid input")
-    # If player is white    
-    if gameBoard[startRow][startCol].color == "white":
-        if playerInput in ["Q", "q"]:
+    # If computer makes promotion it will always choose queen
+    if moveByComputer:
+        if gameBoard[startRow][startCol].color == "white":
             newPiece = wQueen
-        elif playerInput in ["R", "r"]:
-            newPiece = Rook("white", "rook", "wRook")
-            newPiece.canCastle = False
-        elif playerInput in ["B", "b"]:
-            newPiece = wBishop
-        elif playerInput in ["K", "k"]:
-            newPiece = wKnight
-    # If player is black
-    elif gameBoard[startRow][startCol].color == "black":
-        if playerInput in ["Q", "q"]:
+        elif gameBoard[startRow][startCol].color == "black":
             newPiece = bQueen
-        elif playerInput in ["R", "r"]:
-            newPiece = Rook("black", "rook", "bRook")
-            newPiece.canCastle = False
-        elif playerInput in ["B", "b"]:
-            newPiece = bBishop
-        elif playerInput in ["K", "k"]:
-            newPiece = bKnight
+    else:
+        while True:
+            playerInput = input("Choose piece: Q:queen, R:rook, B:bishop, K:knight")
+            if playerInput in ["Q", "q", "R", "r", "B", "b", "K", "k"]:
+                break
+            else:
+                print("Invalid input")
+        # If player is white    
+        if gameBoard[startRow][startCol].color == "white":
+            if playerInput in ["Q", "q"]:
+                newPiece = wQueen
+            elif playerInput in ["R", "r"]:
+                newPiece = Rook("white", "rook", "wRook")
+                newPiece.canCastle = False
+            elif playerInput in ["B", "b"]:
+                newPiece = wBishop
+            elif playerInput in ["K", "k"]:
+                newPiece = wKnight
+        # If player is black
+        elif gameBoard[startRow][startCol].color == "black":
+            if playerInput in ["Q", "q"]:
+                newPiece = bQueen
+            elif playerInput in ["R", "r"]:
+                newPiece = Rook("black", "rook", "bRook")
+                newPiece.canCastle = False
+            elif playerInput in ["B", "b"]:
+                newPiece = bBishop
+            elif playerInput in ["K", "k"]:
+                newPiece = bKnight
     if newPiece != None:
         gameBoard[endRow][endCol] = newPiece
         gameBoard[startRow][startCol] = empty
@@ -508,37 +506,35 @@ def isGameOver(gameBoard, whiteToMove):
     '''
     # 1. Get all moves
     if whiteToMove:
-        startCoords, endCoords = getAllMoves(gameBoard, "white")
+        possibleMoves = getAllMoves(gameBoard, "white")
     else:
-        startCoords, endCoords = getAllMoves(gameBoard, "black")
+        possibleMoves = getAllMoves(gameBoard, "black")
 
     # 2. Try all the moves
-    for startIndex in range(len(startCoords)):
-         for endIndex in range(len(endCoords[startIndex])):
-            tempBoard = copy.deepcopy(gameBoard)
-            startRow = startCoords[startIndex][0]
-            startCol = startCoords[startIndex][1]
-            endRow = endCoords[startIndex][endIndex][0]
-            endCol = endCoords[startIndex][endIndex][1]
-            if moveIsLegal(tempBoard, startRow, startCol, endRow, endCol):
-                # Found a legal move -> game is not over
-                return -1
+    for move in possibleMoves:
+        tempBoard = copy.deepcopy(gameBoard)
+        startRow = move[0]
+        startCol = move[1]
+        endRow = move[2]
+        endCol = move[3]
+        if moveIsLegal(tempBoard, startRow, startCol, endRow, endCol):
+            # Found a legal move -> game is not over
+            return -1
             
     # No legal moves found. Game is over. Is it a checkmate, or a stalemate?
     # 3. Is own king in check?
     if whiteToMove:
-        startCoords, endCoords = getAllMoves(gameBoard, "black")
+        possibleMoves = getAllMoves(gameBoard, "black")
     else:
-        startCoords, endCoords = getAllMoves(gameBoard, "white")
+        possibleMoves = getAllMoves(gameBoard, "white")
     
-    for coords in endCoords:
-        for index in range(len(coords)):
-            if tempBoard[coords[index][0]][coords[index][1]].name == "king":
-                # Own king is in check -> opponent has a checkmate
-                if whiteToMove:
-                    return 2
-                else:
-                    return 1
+    for move in possibleMoves:
+        if tempBoard[move[2]][move[3]].name == "king":
+            # Own king is in check -> opponent has a checkmate
+            if whiteToMove:
+                return 2
+            else:
+                return 1
     # Stalemate
     return 0
 
@@ -550,44 +546,56 @@ def printResult(result):
     elif result == 2:
         print("Black wins!")
 
-def getBestMove(gameBoard, whiteToMove):
-    possibleMoves = []
-    materialCount = Evaluation.countMaterial(gameBoard)
-    bestMove = (None, None, None, None) #type (startRow, startCol, endRow, endCol)
+def getBestMove(gameBoard, whiteToMove, depth=10):
+    # possibleMoves : pass move logic
+    # allMoves : pass move logic and check logic
+    bestMaterialCount = Evaluation.countMaterial(gameBoard)
+    if depth == 0:
+        return [None, None, None, None, bestMaterialCount]
+    allMoves = []
+    bestMove = None #type [startRow, startCol, endRow, endCol, materialBalance]
     #1. get all moves
     if whiteToMove:
-        startCoords, endCoords = getAllMoves(gameBoard, "white")
+        possibleMoves = getAllMoves(gameBoard, "white")
     else:
-        startCoords, endCoords = getAllMoves(gameBoard, "black")
-    print(f"startCoords = {startCoords}")
-    print(f"endCoords = {endCoords}")
+        possibleMoves = getAllMoves(gameBoard, "black")
 
     # 2. Try all the moves and count their material balance
-    for startIndex in range(len(startCoords)):
-         for endIndex in range(len(endCoords[startIndex])):
-            tempBoard = copy.deepcopy(gameBoard)
-            startRow = startCoords[startIndex][0]
-            startCol = startCoords[startIndex][1]
-            endRow = endCoords[startIndex][endIndex][0]
-            endCol = endCoords[startIndex][endIndex][1]
-            if moveIsLegal(tempBoard, startRow, startCol, endRow, endCol):
-                makeTheMove(startRow, startCol, endRow, endCol, tempBoard)
-                possibleMove = (startRow, startCol, endRow, endCol)
-                possibleMoves.append(possibleMove)
-                tempMaterialCount = Evaluation.countMaterial(tempBoard)
-                if whiteToMove:
-                    if tempMaterialCount > materialCount:
+    for move in possibleMoves:
+        tempBoard = copy.deepcopy(gameBoard)
+        startRow = move[0]
+        startCol = move[1]
+        endRow = move[2]
+        endCol = move[3]
+        if moveIsLegal(tempBoard, startRow, startCol, endRow, endCol):
+            makeTheMove(startRow, startCol, endRow, endCol, tempBoard, moveByComputer=True)
+            possibleMove = [startRow, startCol, endRow, endCol]
+            tempMaterialCount = Evaluation.countMaterial(tempBoard)
+            possibleMove.append(tempMaterialCount)
+            allMoves.append(possibleMove)
+
+
+            if whiteToMove:
+                if tempMaterialCount > bestMaterialCount:
+                    if getBestMove(tempBoard, not whiteToMove, depth=(depth-1))[4] >= bestMaterialCount:
+                        bestMaterialCount = tempMaterialCount
                         bestMove = possibleMove
-                elif not whiteToMove:
-                    if tempMaterialCount < materialCount:
+            elif not whiteToMove:
+                if tempMaterialCount < bestMaterialCount:                  
+                    if getBestMove(tempBoard, not whiteToMove, depth=(depth-1))[4] <= bestMaterialCount:
+                        bestMaterialCount = tempMaterialCount
                         bestMove = possibleMove
     print(f"possibleMoves = {possibleMoves}")
     
     # 3. Return the move with the best material balance.
+
+    # If no moves are available, return final material count
+    if not allMoves:
+        return [None, None, None, None, bestMaterialCount]
     # Select random move
-    if bestMove == (None, None, None, None):
-        randomIndex = random.randint(0, len(possibleMoves)-1)
-        bestMove = possibleMoves[randomIndex]
+    if bestMove == None:
+        randomIndex = random.randint(0, len(allMoves)-1)
+        bestMove = allMoves[randomIndex]
     print(f"bestMove = {bestMove}")
     return bestMove
         
@@ -656,7 +664,7 @@ def main():
                 else:
                     endRow, endCol = selectSquare(event.pos)
                     highlighted = False
-                    if processMove(gameBoard, startRow, startCol, endRow, endCol):
+                    if processMove(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=False):
                         whiteToMove = not whiteToMove
                         # If game is over
                         result = isGameOver(gameBoard, whiteToMove)
@@ -682,7 +690,7 @@ def main():
                     else:
                         endRow, endCol = selectSquare(event.pos)
                         highlighted = False
-                        if processMove(gameBoard, startRow, startCol, endRow, endCol):
+                        if processMove(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=False):
                             whiteToMove = not whiteToMove
                             result = isGameOver(gameBoard, whiteToMove)
                             if result != -1:
@@ -693,13 +701,12 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-            #time.sleep(1)
             bestMove = getBestMove(gameBoard, whiteToMove)
             startRow = bestMove[0]
             startCol = bestMove[1]
             endRow = bestMove[2]
             endCol = bestMove[3]
-            if processMove(gameBoard, startRow, startCol, endRow, endCol):
+            if processMove(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=True):
                 whiteToMove = not whiteToMove
                 result = isGameOver(gameBoard, whiteToMove)
                 if result != -1:

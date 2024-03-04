@@ -1,0 +1,63 @@
+ai player functions as follows
+
+(get evaluation of current board)
+get all possible moves
+make all possible moves on temp_boards
+get evaluation of temp_boards
+compare evaluation with starting board
+
+if material balance changes by => 1, increase depth by 1. repeat, until material balance stays same. then compare with start board.
+
+EVALUATION
+count material
+attacked squares (for example a white pawn on e4 attacks squares d5 and f5; give more value to central squares compared to edge squares)
+pawn progression (pawns rank, is it a passed pawn)
+
+21.2.2024
+start prototyping with count material and depth = 1
+
+current main loop logic before trying ai player
+
+if mousebuttondown:
+    if not highlighted:
+        startrow, startcol = selectsquare()
+        if whitetomove and square.color == white:
+            highlighted = true
+        elif blacktomove and square.color == black:
+            higlighted = true
+    else:
+        endrow, endcol = selectsquare()
+        highlighted = false
+        if processmove():
+            whitetomove = !whitetomove
+
+logic needed for ai player
+
+if mousebuttondown and (player == player):
+    if not highlighted:
+        startrow, startcol = selectsquare()
+        if whitetomove and square.color == white:
+            highlighted = true
+        elif blacktomove and square.color == black:
+            higlighted = true
+    else:
+        endrow, endcol = selectsquare()
+        highlighted = false
+        if processmove():
+            whitetomove = !whitetomove
+elif player == ai:
+    startrow, startcol, endrow, endcol = ai_selectBestMove()
+    if processmove():
+        whitetomove != whitetomove
+
+
+aiSelectBestMove(gameboard, whitetomove) would look something like this
+get current eval()
+get all moves()
+try all moves()
+get all evals()
+select the best eval
+return startrow, startcol, endrow, endcol
+
+
+
