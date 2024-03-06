@@ -599,7 +599,7 @@ def getBestMove(gameBoard, whiteToMove, depth=10):
     return bestMove
 
 boardCounter = 0
-def minimax(gameboard, whitetomove, depth):
+def minimax(gameboard, whitetomove, depth, canIncreaseDepth):
     '''
     Returns:
         eval: int
@@ -625,8 +625,11 @@ def minimax(gameboard, whitetomove, depth):
     if case == 0:
         return 0, None
     
+    
+    
     if depth == 0:
-        return Evaluation.countMaterial(gameboard), None
+        materialCount = Evaluation.countMaterial(gameboard)
+        return materialCount, None
 
     if whitetomove:
         max_eval = -100
@@ -640,8 +643,15 @@ def minimax(gameboard, whitetomove, depth):
         
         for move in possible_moves:
             temp_board = copy.deepcopy(gameboard)
+            materialCountBefore = Evaluation.countMaterial(temp_board)
             makeTheMove(move[0], move[1], move[2], move[3], temp_board, True)
-            eval = minimax(temp_board, not whitetomove, depth-1)[0]
+            materialCountAfter = Evaluation.countMaterial(temp_board)
+            if materialCountAfter == materialCountBefore:
+                canIncreaseDepth = False
+            if materialCountAfter > materialCountBefore+1 and canIncreaseDepth:
+                depth += 1
+                canIncreaseDepth = False
+            eval = minimax(temp_board, not whitetomove, depth-1, canIncreaseDepth and depth == 1)[0]
             if eval == max_eval:
                 best_moves.append(move)
             elif eval > max_eval:
@@ -663,8 +673,14 @@ def minimax(gameboard, whitetomove, depth):
         
         for move in possible_moves:
             temp_board = copy.deepcopy(gameboard)
+            materialCountBefore = Evaluation.countMaterial(temp_board)
             makeTheMove(move[0], move[1], move[2], move[3], temp_board, True)
-            eval = minimax(temp_board, not whitetomove, depth-1)[0]
+            materialCountAfter = Evaluation.countMaterial(temp_board)
+            if materialCountAfter == materialCountBefore:
+                canIncreaseDepth = False
+            if materialCountAfter < materialCountBefore-1 and canIncreaseDepth and depth == 1:
+                depth += 1
+            eval = minimax(temp_board, not whitetomove, depth-1, canIncreaseDepth)[0]
             if eval == min_eval:
                 best_moves.append(move)
             elif eval < min_eval:
@@ -674,11 +690,11 @@ def minimax(gameboard, whitetomove, depth):
         # print(f"Black's turn: min_eval = {min_eval}, best_moves = {best_moves}")
         return min_eval, best_moves
 
-def call_minimax(gameboard, whitetomove, depth):
+def call_minimax(gameboard, whitetomove, depth, canIncreaseDepth):
     global boardCounter
     startTime = time.time()
 
-    evaluation, best_moves = minimax(gameboard, whitetomove, depth)
+    evaluation, best_moves = minimax(gameboard, whitetomove, depth, canIncreaseDepth)
     if len(best_moves) > 1:
             randomIndex = random.randint(0, len(best_moves)-1)
             best_move = best_moves[randomIndex]
@@ -796,7 +812,7 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-            bestMove = call_minimax(gameBoard, whiteToMove, 2)
+            bestMove = call_minimax(gameBoard, whiteToMove, 2, True)
             startRow = bestMove[0]
             startCol = bestMove[1]
             endRow = bestMove[2]
