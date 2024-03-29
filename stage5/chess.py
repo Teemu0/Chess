@@ -1,3 +1,4 @@
+#TODO: Add graphical interface for promoting pawns (instead of using keyboard input).
 #TODO: Add game modes as black; Draw chess board upside down
 #TODO: updateDevelopmentTable() has a bug. Evaluation.developmentBooleans is not accurate.
 #TODO: Evaluation: add a list that tracks controlled squares, squares under attack, pieces under attack, etc.
