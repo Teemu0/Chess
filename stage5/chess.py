@@ -278,6 +278,19 @@ def resetGlobalVariables():
     global boardCounter
     boardCounter = 0
 
+    Evaluation.developmentBooleans = {
+        "whiteCastle" : False,
+        "whiteKnight1": False,
+        "whiteKnight2" : False,
+        "whiteBishop1" : False,
+        "whiteBishop2" : False,
+        "blackCastle": False,
+        "blackKnight1": False,
+        "blackKnight2" : False,
+        "blackBishop1" : False,
+        "blackBishop2" : False,
+    }
+
 def draw_chessboard(highlight, hlRow, hlCol):
     # Draw empty chess board
     for row in range(ROWS):
@@ -633,7 +646,6 @@ def promotePawn(gameBoard, startRow, startCol, endRow, endCol, moveByComputer=Tr
     if newPiece != None:
         gameBoard[endRow][endCol] = newPiece
         gameBoard[startRow][startCol] = empty
-        print("Promotion successful")
     else:
         print("Promotion failed")
 
@@ -718,8 +730,6 @@ def minimaxAdvanced(gameboard, whitetomove, depth, canIncreaseDepth, startTime):
         eval: int
         best_moves: [(startRow, startCol, endRow, endCol), ] # a list of best moves which share the same eval.
     '''
-    print("_______________________")
-    print(f"minimax: depth = {depth}")
     global boardCounter
     boardCounter += 1
 
@@ -819,8 +829,6 @@ def minimaxBasic(gameboard, whitetomove, depth, canIncreaseDepth):
         move: (startRow, startCol, endRow, endCol)
         boardsAnalyzed: int  # number of boards created using copy.deepcopy
     '''
-    print("_______________________")
-    print(f"minimax: depth = {depth}")
     global boardCounter
     boardCounter += 1
 
@@ -900,6 +908,7 @@ def call_minimax(gameboard, whitetomove, depth, canIncreaseDepth, advancedMode):
     global boardCounter
     startTime = time.time()
 
+    print("Bot is thinking...")
     if advancedMode:
         evaluation, best_moves = minimaxAdvanced(gameboard, whitetomove, depth, canIncreaseDepth, startTime)
 
@@ -918,7 +927,7 @@ def call_minimax(gameboard, whitetomove, depth, canIncreaseDepth, advancedMode):
     totalTime = round((endTime - startTime), 2)
 
     print(f"call_minimax: minimax went through {boardCounter} boards and it took {totalTime} seconds")
-    print(f"call_minimax: Computer evaluates the position as {evaluation}")
+    print(f"call_minimax: Computer evaluates the position as {round(evaluation, 2)}")
 
     # reset boardCounter
     boardCounter = 0

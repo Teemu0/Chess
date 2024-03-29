@@ -35,7 +35,7 @@ class Evaluation():
         '''
         Returns: materialBalance
         '''
-        # 1: Count material
+        # Count material
         whiteMaterial = 0
         blackMaterial = 0
         for row in range(8):
@@ -45,10 +45,8 @@ class Evaluation():
                 elif gameBoard[row][col].color == "black":
                     blackMaterial += gameBoard[row][col].value
 
-        print(f"White material count: {whiteMaterial}")
-        print(f"Black material count: {blackMaterial}")
         materialBalance = whiteMaterial - blackMaterial
-        print(f"Material balance: {materialBalance}")
+        # print(f"Material balance: {materialBalance}")
         return materialBalance
     
     def pawnProgression(gameBoard):
