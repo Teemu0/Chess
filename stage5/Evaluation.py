@@ -1,13 +1,3 @@
-from Piece import Piece
-from Empty import Empty
-from Pawn import Pawn
-from Rook import Rook
-from Bishop import Bishop
-from Knight import Knight
-from Queen import Queen
-from King import King
-import copy
-#from chess import makeMove
 
 class Evaluation():
     def __init__(self) -> None:
@@ -26,8 +16,13 @@ class Evaluation():
         "blackBishop2" : False,
     }
 
-
     def getEvaluation(gameBoard):
+        '''
+        Get game evaluation. evaluation > 0 means white is winning, evaluation < 0 means black is winning. 
+        A pawn is worth 1 evaluation point. For example, if white is 3 pawns up, then evaluation is approximately 3.
+        Returns:
+            int evaluation
+        '''
         materialBalance = Evaluation.countMaterial(gameBoard)
         pawnProgressionAdvantage = Evaluation.pawnProgression(gameBoard)
         developmentAdvantage = Evaluation.getDevelopmentScore(gameBoard)
@@ -122,21 +117,3 @@ class Evaluation():
             score -= 0.8
 
         return score
-
-    
-    # def minimax(gameBoard, maximizing):
-    #     # Try every legal move
-    #     temp_board = copy.deepcopy(gameBoard)
-    #     # If white to move
-    #     if maximizing:
-    #         for row in range(8):
-    #             for col in range(8):
-    #                 if temp_board[row][col].color =="white":
-    #                     moveStart = ((row, col), temp_board[row][col])
-    #                     movesToTry = temp_board[row][col].getMoves[1]                   
-    #                     for squares in movesToTry:
-    #                         moveEnd = (squares, temp_board[squares[0]][squares[1]])
-    #                         makeMove(moveStart, moveEnd, temp_board)
-    #                         eval(temp_board, maximizing)
-
-

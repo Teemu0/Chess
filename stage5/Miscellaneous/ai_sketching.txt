@@ -1,3 +1,4 @@
+OUTDATED
 ai player functions as follows
 
 (get evaluation of current board)
